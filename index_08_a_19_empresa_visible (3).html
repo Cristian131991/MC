@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Reservas de Muelle - Calendario Semanal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 min-h-screen">
+  <div class="p-6 max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold text-center text-indigo-700 mb-4">Reservas de Muelle - Calendario Semanal</h1>
+    <div class="flex justify-between items-center mb-4">
+      <button onclick="cambiarSemana(-1)" class="bg-blue-600 text-white px-4 py-2 rounded">Semana anterior</button>
+      <div id="semanaTexto" class="font-semibold text-lg"></div>
+      <button onclick="cambiarSemana(1)" class="bg-blue-600 text-white px-4 py-2 rounded">Siguiente semana</button>
+    </div>
+    <div id="calendario" class="overflow-x-auto bg-white rounded shadow p-2"></div>
+  </div>
+
+  <script>
+    const horas = Array.from({length: 22}, (_, i) => {
+      const h = String(8 + Math.floor(i / 2)).padStart(2, '0');
+      const m = i % 2 === 0 ? '00' : '30';
+      return `${h}:${m}`;
+    });
+
+    let inicioSemana = getInicioSemana(new Date());
+
+    function getInicioSemana(fecha) {
+      const d = new Date(fecha);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      d.setDate(diff);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function formatDate(d) {
+      return d.toISOString().split('T')[0];
+    }
+
+    function cambiarSemana(offset) {
+      inicioSemana.setDate(inicioSemana.getDate() + offset * 7);
+      renderizarCalendario();
+    }
+
+    function getReservas() {
+      return JSON.parse(localStorage.getItem("reservasMuelle") || "{}");
+    }
+
+    function guardarReservas(data) {
+      localStorage.setItem("reservasMuelle", JSON.stringify(data));
+    }
+
+    function renderizarCalendario() {
+      const reservas = getReservas();
+      const dias = Array.from({length: 7}, (_, i) => {
+        const d = new Date(inicioSemana);
+        d.setDate(d.getDate() + i);
+        return d;
+      });
+
+      const diasSemana = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+      let html = '<table class="w-full table-auto border"><thead><tr><th class="border p-2">Hora</th>';
+      dias.forEach((d, i) => {
+        html += `<th class="border p-2">${diasSemana[i]}<br>${d.toLocaleDateString()}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      document.getElementById("semanaTexto").textContent = 
+        `${formatDate(dias[0])} - ${formatDate(dias[6])}`;
+
+      horas.forEach(hora => {
+        html += `<tr><td class="border p-1 text-center font-semibold">${hora}</td>`;
+        dias.forEach(d => {
+          const fecha = formatDate(d);
+          const reservado = reservas[fecha]?.[hora];
+          const bg = reservado ? 'bg-red-200 text-red-800' : 'bg-green-100';
+          const texto = reservado ? reservado.empresa : 'Disponible';
+          html += `<td class="border text-center p-1 cursor-pointer ${bg}" data-fecha="${fecha}" data-hora="${hora}" title="${reservado ? 'Reservado por: ' + reservado.nombre + ' (' + reservado.empresa + ')' : 'Haz clic para reservar'}">${texto}</td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+
+      document.getElementById("calendario").innerHTML = html;
+
+      document.querySelectorAll("td[data-fecha]").forEach(cell => {
+        const fecha = cell.dataset.fecha;
+        const hora = cell.dataset.hora;
+        const reservas = getReservas();
+        cell.onclick = () => {
+          if (reservas[fecha]?.[hora]) {
+            if (confirm("¿Cancelar esta reserva?")) {
+              delete reservas[fecha][hora];
+              guardarReservas(reservas);
+              renderizarCalendario();
+            }
+          } else {
+            const nombre = prompt("Nombre del chofer:");
+            const empresa = prompt("Empresa:");
+            if (nombre && empresa) {
+              reservas[fecha] = reservas[fecha] || {};
+              reservas[fecha][hora] = { nombre, empresa };
+              guardarReservas(reservas);
+              renderizarCalendario();
+            }
+          }
+        };
+      });
+    }
+
+    window.onload = renderizarCalendario;
+  </script>
+</body>
+</html>
