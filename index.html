@@ -1,134 +1,18 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reservas de Muelle - Airos</title>
-  <style>
-    body { font-family: sans-serif; background: #fff; color: #333; margin: 0; padding: 1rem; }
-    h1 { color: #6b21a8; text-align: center; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
-    .reservado { background-color: #fbb; color: #900; cursor: pointer; }
-    .disponible { background-color: #ffc; cursor: pointer; }
-    .controls { display: flex; justify-content: space-between; margin: 1rem 0; }
-    .controls button { background: #6b21a8; color: white; border: none; padding: 0.5rem 1rem; cursor: pointer; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Reservas de Muelle - Airos</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Reservas de Muelle - Airos</h1>
-  <div class="controls">
-    <button id="prevWeek">← Semana anterior</button>
-    <div id="semanaTexto"></div>
-    <button id="nextWeek">Semana siguiente →</button>
-  </div>
-  <div id="calendario"></div>
-
-  <script>
-    window.onload = function() {
-      const horas = Array.from({length: 22}, (_, i) => {
-        const h = String(8 + Math.floor(i / 2)).padStart(2, '0');
-        const m = i % 2 === 0 ? '00' : '30';
-        return \`\${h}:\${m}\`;
-      });
-
-      let inicioSemana = getInicioSemana(new Date());
-
-      function getInicioSemana(fecha) {
-        const d = new Date(fecha);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        d.setDate(diff);
-        d.setHours(0, 0, 0, 0);
-        return d;
-      }
-
-      function formatDate(d) {
-        return d.toISOString().split('T')[0];
-      }
-
-      function cambiarSemana(offset) {
-        inicioSemana.setDate(inicioSemana.getDate() + offset * 7);
-        renderizarCalendario();
-      }
-
-      function getReservas() {
-        return JSON.parse(localStorage.getItem("reservasMuelle") || "{}");
-      }
-
-      function guardarReservas(data) {
-        localStorage.setItem("reservasMuelle", JSON.stringify(data));
-      }
-
-      function renderizarCalendario() {
-        const reservas = getReservas();
-        const dias = Array.from({length: 7}, (_, i) => {
-          const d = new Date(inicioSemana);
-          d.setDate(d.getDate() + i);
-          return d;
-        });
-
-        const diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-        let html = "<table><thead><tr><th>Hora</th>";
-        dias.forEach((d, i) => {
-          html += \`<th>\${diasSemana[i]}<br>\${d.toLocaleDateString()}</th>\`;
-        });
-        html += "</tr></thead><tbody>";
-
-        document.getElementById("semanaTexto").textContent = 
-          \`\${formatDate(dias[0])} - \${formatDate(dias[6])}\`;
-
-        horas.forEach(hora => {
-          html += \`<tr><td><b>\${hora}</b></td>\`;
-          dias.forEach(d => {
-            const fecha = formatDate(d);
-            const reservado = reservas[fecha]?.[hora];
-            const texto = reservado ? reservado.empresa : "Disponible";
-            const clase = reservado ? "reservado" : "disponible";
-            html += \`<td class="\${clase}" data-fecha="\${fecha}" data-hora="\${hora}">\${texto}</td>\`;
-          });
-          html += "</tr>";
-        });
-        html += "</tbody></table>";
-
-        document.getElementById("calendario").innerHTML = html;
-
-        document.querySelectorAll("td[data-fecha]").forEach(cell => {
-          const fecha = cell.dataset.fecha;
-          const hora = cell.dataset.hora;
-          const reservas = getReservas();
-
-          cell.onclick = () => {
-            if (reservas[fecha]?.[hora]) {
-              const pinIngresado = prompt("Introduce el PIN para cancelar:");
-              if (pinIngresado && reservas[fecha][hora].pin === pinIngresado) {
-                delete reservas[fecha][hora];
-                guardarReservas(reservas);
-                renderizarCalendario();
-              } else {
-                alert("PIN incorrecto o cancelado.");
-              }
-            } else {
-              const nombre = prompt("Nombre del chofer:");
-              const empresa = prompt("Empresa:");
-              const pin = prompt("Crea un PIN (4 dígitos):");
-              if (nombre && empresa && pin) {
-                reservas[fecha] = reservas[fecha] || {};
-                reservas[fecha][hora] = { nombre, empresa, pin };
-                guardarReservas(reservas);
-                renderizarCalendario();
-              }
-            }
-          };
-        });
-      }
-
-      // Asociar eventos
-      document.getElementById("prevWeek").onclick = () => cambiarSemana(-1);
-      document.getElementById("nextWeek").onclick = () => cambiarSemana(1);
-
-      renderizarCalendario();
-    };
-  </script>
+    <h1>Reservas de Muelle - Airos</h1>
+    <div class="controls">
+        <button onclick="cambiarSemana(-1)">← Semana anterior</button>
+        <button onclick="cambiarSemana(1)">Semana siguiente →</button>
+    </div>
+    <div id="calendario"></div>
+    <script src="script.js"></script>
 </body>
 </html>
