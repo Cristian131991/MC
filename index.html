@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reservas de Muelle - Calendario Semanal</title>
+  <title>Reservas de Muelle - Airos Delicatessen</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-white text-gray-900 min-h-screen">
   <div class="p-6 max-w-7xl mx-auto">
-    
-<div class="flex flex-col items-center justify-center mb-4">
-  <img src="https://www.airosglutenfree.com/wp-content/uploads/2020/02/logo-airos.png" alt="Airos Logo" class="w-48 mb-2">
-  <h1 class="text-3xl font-bold text-center text-purple-800">Reservas de Muelle - Airos Delicatessen</h1>
-</div>
-
+    <div class="flex flex-col items-center justify-center mb-4">
+      <img src="https://www.airosglutenfree.com/wp-content/uploads/2020/02/logo-airos.png" alt="Airos Logo" class="w-48 mb-2">
+      <h1 class="text-3xl font-bold text-center text-purple-800">Reservas de Muelle - Airos Delicatessen</h1>
+    </div>
     <div class="flex justify-between items-center mb-4">
-      <button onclick="cambiarSemana(-1)" class="bg-purple-700 text-white px-4 py-2 rounded">Semana anterior</button>
+      <button onclick="cambiarSemana(-1)" class="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-900">Semana anterior</button>
       <div id="semanaTexto" class="font-semibold text-lg"></div>
-      <button onclick="cambiarSemana(1)" class="bg-purple-700 text-white px-4 py-2 rounded">Siguiente semana</button>
+      <button onclick="cambiarSemana(1)" class="bg-purple-700 text-white px-4 py-2 rounded hover:bg-purple-900">Siguiente semana</button>
     </div>
     <div id="calendario" class="overflow-x-auto bg-white rounded shadow-lg border border-purple-200 p-2"></div>
   </div>
@@ -26,7 +24,7 @@
     const horas = Array.from({length: 22}, (_, i) => {
       const h = String(8 + Math.floor(i / 2)).padStart(2, '0');
       const m = i % 2 === 0 ? '00' : '30';
-      return `${h}:${m}`;
+      return \`\${h}:\${m}\`;
     });
 
     let inicioSemana = getInicioSemana(new Date());
@@ -65,24 +63,24 @@
         return d;
       });
 
-      const diasSemana = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+      const diasSemana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
       let html = '<table class="w-full table-auto border"><thead><tr><th class="border p-2">Hora</th>';
       dias.forEach((d, i) => {
-        html += `<th class="border p-2">${diasSemana[i]}<br>${d.toLocaleDateString()}</th>`;
+        html += \`<th class="border p-2">\${diasSemana[i]}<br>\${d.toLocaleDateString()}</th>\`;
       });
       html += '</tr></thead><tbody>';
 
       document.getElementById("semanaTexto").textContent = 
-        `${formatDate(dias[0])} - ${formatDate(dias[6])}`;
+        \`\${formatDate(dias[0])} - \${formatDate(dias[6])}\`;
 
       horas.forEach(hora => {
-        html += `<tr><td class="border p-1 text-center font-semibold">${hora}</td>`;
+        html += \`<tr><td class="border p-1 text-center font-semibold">\${hora}</td>\`;
         dias.forEach(d => {
           const fecha = formatDate(d);
           const reservado = reservas[fecha]?.[hora];
           const bg = reservado ? 'bg-red-300 text-red-900' : 'bg-yellow-100';
           const texto = reservado ? reservado.empresa : 'Disponible';
-          html += `<td class="border text-center p-1 cursor-pointer ${bg}" data-fecha="${fecha}" data-hora="${hora}" title="${reservado ? 'Reservado por: ' + reservado.nombre + ' (' + reservado.empresa + ')' : 'Haz clic para reservar'}">${texto}</td>`;
+          html += \`<td class="border text-center p-1 cursor-pointer \${bg}" data-fecha="\${fecha}" data-hora="\${hora}" title="\${reservado ? 'Reservado por: ' + reservado.empresa : 'Haz clic para reservar'}">\${texto}</td>\`;
         });
         html += '</tr>';
       });
@@ -96,17 +94,21 @@
         const reservas = getReservas();
         cell.onclick = () => {
           if (reservas[fecha]?.[hora]) {
-            if (confirm("¿Cancelar esta reserva?")) {
+            const pinIngresado = prompt("Introduce el PIN de 4 dígitos para cancelar:");
+            if (pinIngresado && reservas[fecha][hora] && reservas[fecha][hora].pin === pinIngresado) {
               delete reservas[fecha][hora];
               guardarReservas(reservas);
               renderizarCalendario();
+            } else {
+              alert("PIN incorrecto. No se puede cancelar esta reserva.");
             }
           } else {
             const nombre = prompt("Nombre del chofer:");
             const empresa = prompt("Empresa:");
-            if (nombre && empresa) {
+            const pin = prompt("Crea un PIN de 4 dígitos para esta reserva:");
+            if (nombre && empresa && pin) {
               reservas[fecha] = reservas[fecha] || {};
-              reservas[fecha][hora] = { nombre, empresa };
+              reservas[fecha][hora] = { nombre, empresa, pin };
               guardarReservas(reservas);
               renderizarCalendario();
             }
