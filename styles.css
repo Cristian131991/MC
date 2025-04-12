@@ -1,33 +1,22 @@
-
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0;
-    padding: 0;
-    background-color: #fff;
-    color: #4B0082;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
 }
-
 h1 {
-    margin-top: 30px;
+  color: #6b1d9d;
 }
-
 .controls {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px;
-    padding: 0 50px;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
 }
-
 button {
-    padding: 10px 20px;
-    background-color: #6A0DAD;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-#calendario {
-    margin-top: 20px;
+  background-color: #6b1d9d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 5px;
 }
