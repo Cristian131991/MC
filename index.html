@@ -8,13 +8,11 @@
     body {
       font-family: Arial, sans-serif;
       background: #ffffff;
-      color: #4B0082;
+      color: #A71930;
       padding: 1rem;
       text-align: center;
     }
-    h1 {
-      margin: 1rem 0;
-    }
+    h1 { margin: 1rem 0; }
     .controls {
       display: flex;
       justify-content: center;
@@ -23,7 +21,7 @@
     }
     button {
       padding: 0.5rem 1rem;
-      background-color: #6B21A8;
+      background-color: #A71930;
       color: white;
       border: none;
       border-radius: 5px;
@@ -40,12 +38,12 @@
       text-align: center;
     }
     .reservado {
-      background-color: #ffd6d6;
+      background-color: #ffebeb;
       color: #900;
       cursor: pointer;
     }
     .disponible {
-      background-color: #e0f7ff;
+      background-color: #eaf2e3;
       cursor: pointer;
     }
   </style>
@@ -83,53 +81,64 @@
 
       const table = document.createElement("table");
       const thead = document.createElement("thead");
+      
       const headerRow = document.createElement("tr");
-      headerRow.innerHTML = "<th>Hora</th>" + diasSemana.map(d => `<th>${d}</th>`).join("");
+      headerRow.innerHTML = "<th>Hora</th>" + diasSemana.map((d, i) => {
+        const fecha = new Date(inicioSemana);
+        fecha.setDate(fecha.getDate() + i);
+        const dia = fecha.getDate().toString().padStart(2, '0');
+        const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+        return `<th>${d}<br><small>${dia}/${mes}</small></th>`;
+      }).join("");
+    
       thead.appendChild(headerRow);
       table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
+
       for (let h = horaInicio; h <= horaFin; h++) {
-        const row = document.createElement("tr");
-        const horaTexto = `${h.toString().padStart(2, '0')}:00`;
-        row.innerHTML = `<td><b>${horaTexto}</b></td>`;
+        for (let m of ["00", "30"]) {
+          const horaTexto = `${String(h).padStart(2, "0")}:${m}`;
+          const row = document.createElement("tr");
+          row.innerHTML = `<td><b>${horaTexto}</b></td>`;
 
-        for (let i = 0; i < 5; i++) {
-          const fecha = new Date(inicioSemana);
-          fecha.setDate(fecha.getDate() + i);
-          const fechaStr = fecha.toISOString().split("T")[0];
+          for (let i = 0; i < 5; i++) {
+            const fecha = new Date(inicioSemana);
+            fecha.setDate(fecha.getDate() + i);
+            const fechaStr = fecha.toISOString().split("T")[0];
 
-          const celda = document.createElement("td");
-          const reservado = reservas[fechaStr]?.[horaTexto];
+            const celda = document.createElement("td");
+            const reservado = reservas[fechaStr]?.[horaTexto];
 
-          celda.textContent = reservado ? reservado.empresa : "Disponible";
-          celda.className = reservado ? "reservado" : "disponible";
+            celda.textContent = reservado ? reservado.empresa : "Disponible";
+            celda.className = reservado ? "reservado" : "disponible";
 
-          celda.onclick = () => {
-            if (reservado) {
-              const pin = prompt("Introduce el PIN para cancelar la reserva:");
-              if (pin === reservado.pin) {
-                delete reservas[fechaStr][horaTexto];
+            celda.onclick = () => {
+              if (reservado) {
+                const pin = prompt("Introduce el PIN para cancelar la reserva:");
+                if (pin === reservado.pin) {
+                  delete reservas[fechaStr][horaTexto];
+                  localStorage.setItem("reservasMuellePIN", JSON.stringify(reservas));
+                  renderizarCalendario();
+                } else {
+                  alert("PIN incorrecto.");
+                }
+              } else {
+                const empresa = prompt("Nombre de la empresa:");
+                const pin = prompt("Crea un PIN para esta reserva:");
+                if (!empresa || !pin) return;
+                reservas[fechaStr] = reservas[fechaStr] || {};
+                reservas[fechaStr][horaTexto] = { empresa, pin };
                 localStorage.setItem("reservasMuellePIN", JSON.stringify(reservas));
                 renderizarCalendario();
-              } else {
-                alert("PIN incorrecto.");
               }
-            } else {
-              const empresa = prompt("Nombre de la empresa:");
-              const pin = prompt("Crea un PIN para esta reserva:");
-              if (!empresa || !pin) return;
-              reservas[fechaStr] = reservas[fechaStr] || {};
-              reservas[fechaStr][horaTexto] = { empresa, pin };
-              localStorage.setItem("reservasMuellePIN", JSON.stringify(reservas));
-              renderizarCalendario();
-            }
-          };
+            };
 
-          row.appendChild(celda);
+            row.appendChild(celda);
+          }
+
+          tbody.appendChild(row);
         }
-
-        tbody.appendChild(row);
       }
 
       table.appendChild(tbody);
