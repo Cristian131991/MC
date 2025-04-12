@@ -1,26 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reservas de Muelle - Airos</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 1rem;
       background: #ffffff;
       color: #4B0082;
+      padding: 1rem;
+      text-align: center;
     }
     h1 {
-      margin-top: 1rem;
+      margin: 1rem 0;
     }
     .controls {
       display: flex;
-      justify-content: space-between;
-      margin: 1rem auto;
-      max-width: 600px;
+      justify-content: center;
+      gap: 1rem;
+      margin: 1rem 0;
     }
     button {
       padding: 0.5rem 1rem;
@@ -37,30 +36,37 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 0.4rem;
+      padding: 0.5rem;
       text-align: center;
     }
-    .disponible { background-color: #f0f8ff; cursor: pointer; }
-    .reservado { background-color: #fdd; cursor: pointer; color: #900; }
+    .reservado {
+      background-color: #ffd6d6;
+      color: #900;
+      cursor: pointer;
+    }
+    .disponible {
+      background-color: #e0f7ff;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <h1>Reservas de Muelle - Airos</h1>
+  <h1>📦 Reservas de Muelle – Vista Semanal</h1>
   <div class="controls">
-    <button onclick="cambiarSemana(-1)">← Semana anterior</button>
-    <button onclick="cambiarSemana(1)">Semana siguiente →</button>
+    <button onclick="cambiarSemana(-1)">⬅️ Semana anterior</button>
+    <button onclick="cambiarSemana(1)">➡️ Siguiente semana</button>
   </div>
-  <div id="calendario"></div>
+  <div id="calendario">Cargando calendario...</div>
 
   <script>
     let fechaActual = new Date();
 
-    function cambiarSemana(direccion) {
-      fechaActual.setDate(fechaActual.getDate() + direccion * 7);
-      generarCalendario();
+    function cambiarSemana(offset) {
+      fechaActual.setDate(fechaActual.getDate() + offset * 7);
+      renderizarCalendario();
     }
 
-    function generarCalendario() {
+    function renderizarCalendario() {
       const calendario = document.getElementById("calendario");
       calendario.innerHTML = "";
 
@@ -70,76 +76,69 @@
 
       const inicioSemana = new Date(fechaActual);
       const day = inicioSemana.getDay();
-      const diferencia = day === 0 ? -6 : 1 - day;
-      inicioSemana.setDate(fechaActual.getDate() + diferencia);
+      const diff = day === 0 ? -6 : 1 - day;
+      inicioSemana.setDate(fechaActual.getDate() + diff);
 
-      const tabla = document.createElement("table");
+      const reservas = JSON.parse(localStorage.getItem("reservasMuellePIN") || "{}");
+
+      const table = document.createElement("table");
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
       headerRow.innerHTML = "<th>Hora</th>" + diasSemana.map(d => `<th>${d}</th>`).join("");
       thead.appendChild(headerRow);
-      tabla.appendChild(thead);
+      table.appendChild(thead);
 
       const tbody = document.createElement("tbody");
-      const reservas = JSON.parse(localStorage.getItem("reservasMuelle") || "{}");
-
       for (let h = horaInicio; h <= horaFin; h++) {
-        for (let m = 0; m < 60; m += 30) {
-          const horaLabel = \`\${String(h).padStart(2, '0')}:\${m === 0 ? '00' : '30'}\`;
-          const row = document.createElement("tr");
-          row.innerHTML = \`<td><b>\${horaLabel}</b></td>\`;
+        const row = document.createElement("tr");
+        const horaTexto = `${h.toString().padStart(2, '0')}:00`;
+        row.innerHTML = `<td><b>${horaTexto}</b></td>`;
 
-          for (let d = 0; d < 5; d++) {
-            const fecha = new Date(inicioSemana);
-            fecha.setDate(fecha.getDate() + d);
-            const fechaStr = fecha.toISOString().split('T')[0];
+        for (let i = 0; i < 5; i++) {
+          const fecha = new Date(inicioSemana);
+          fecha.setDate(fecha.getDate() + i);
+          const fechaStr = fecha.toISOString().split("T")[0];
 
-            const reservado = reservas[fechaStr]?.[horaLabel];
-            const celda = document.createElement("td");
+          const celda = document.createElement("td");
+          const reservado = reservas[fechaStr]?.[horaTexto];
 
+          celda.textContent = reservado ? reservado.empresa : "Disponible";
+          celda.className = reservado ? "reservado" : "disponible";
+
+          celda.onclick = () => {
             if (reservado) {
-              celda.textContent = reservado.empresa;
-              celda.className = "reservado";
-              celda.title = "Haz clic para cancelar";
-            } else {
-              celda.textContent = "Disponible";
-              celda.className = "disponible";
-              celda.title = "Haz clic para reservar";
-            }
-
-            celda.onclick = () => {
-              if (reservado) {
-                const pin = prompt("Introduce el PIN para cancelar:");
-                if (pin && pin === reservado.pin) {
-                  delete reservas[fechaStr][horaLabel];
-                  localStorage.setItem("reservasMuelle", JSON.stringify(reservas));
-                  generarCalendario();
-                } else {
-                  alert("PIN incorrecto.");
-                }
+              const pin = prompt("Introduce el PIN para cancelar la reserva:");
+              if (pin === reservado.pin) {
+                delete reservas[fechaStr][horaTexto];
+                localStorage.setItem("reservasMuellePIN", JSON.stringify(reservas));
+                renderizarCalendario();
               } else {
-                const nombre = prompt("Nombre del chofer:");
-                const empresa = prompt("Empresa:");
-                const pin = prompt("Crea un PIN (4 dígitos):");
-                if (!nombre || !empresa || !pin) return;
-                reservas[fechaStr] = reservas[fechaStr] || {};
-                reservas[fechaStr][horaLabel] = { nombre, empresa, pin };
-                localStorage.setItem("reservasMuelle", JSON.stringify(reservas));
-                generarCalendario();
+                alert("PIN incorrecto.");
               }
-            };
+            } else {
+              const empresa = prompt("Nombre de la empresa:");
+              const pin = prompt("Crea un PIN para esta reserva:");
+              if (!empresa || !pin) return;
+              reservas[fechaStr] = reservas[fechaStr] || {};
+              reservas[fechaStr][horaTexto] = { empresa, pin };
+              localStorage.setItem("reservasMuellePIN", JSON.stringify(reservas));
+              renderizarCalendario();
+            }
+          };
 
-            row.appendChild(celda);
-          }
-          tbody.appendChild(row);
+          row.appendChild(celda);
         }
+
+        tbody.appendChild(row);
       }
 
-      tabla.appendChild(tbody);
-      calendario.appendChild(tabla);
+      table.appendChild(tbody);
+      calendario.appendChild(table);
     }
 
-    window.onload = generarCalendario;
+    window.onload = () => {
+      renderizarCalendario();
+    };
   </script>
 </body>
 </html>
