@@ -37,9 +37,11 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 0.5rem;
+      padding: 0.4rem;
       text-align: center;
     }
+    .disponible { background-color: #f0f8ff; cursor: pointer; }
+    .reservado { background-color: #fdd; cursor: pointer; color: #900; }
   </style>
 </head>
 <body>
@@ -67,8 +69,8 @@
       const horaFin = 19;
 
       const inicioSemana = new Date(fechaActual);
-      const dia = inicioSemana.getDay();
-      const diferencia = dia === 0 ? -6 : 1 - dia;
+      const day = inicioSemana.getDay();
+      const diferencia = day === 0 ? -6 : 1 - day;
       inicioSemana.setDate(fechaActual.getDate() + diferencia);
 
       const tabla = document.createElement("table");
@@ -79,11 +81,60 @@
       tabla.appendChild(thead);
 
       const tbody = document.createElement("tbody");
+      const reservas = JSON.parse(localStorage.getItem("reservasMuelle") || "{}");
+
       for (let h = horaInicio; h <= horaFin; h++) {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${h.toString().padStart(2, '0')}:00</td>` + diasSemana.map(() => "<td>Disponible</td>").join("");
-        tbody.appendChild(row);
+        for (let m = 0; m < 60; m += 30) {
+          const horaLabel = \`\${String(h).padStart(2, '0')}:\${m === 0 ? '00' : '30'}\`;
+          const row = document.createElement("tr");
+          row.innerHTML = \`<td><b>\${horaLabel}</b></td>\`;
+
+          for (let d = 0; d < 5; d++) {
+            const fecha = new Date(inicioSemana);
+            fecha.setDate(fecha.getDate() + d);
+            const fechaStr = fecha.toISOString().split('T')[0];
+
+            const reservado = reservas[fechaStr]?.[horaLabel];
+            const celda = document.createElement("td");
+
+            if (reservado) {
+              celda.textContent = reservado.empresa;
+              celda.className = "reservado";
+              celda.title = "Haz clic para cancelar";
+            } else {
+              celda.textContent = "Disponible";
+              celda.className = "disponible";
+              celda.title = "Haz clic para reservar";
+            }
+
+            celda.onclick = () => {
+              if (reservado) {
+                const pin = prompt("Introduce el PIN para cancelar:");
+                if (pin && pin === reservado.pin) {
+                  delete reservas[fechaStr][horaLabel];
+                  localStorage.setItem("reservasMuelle", JSON.stringify(reservas));
+                  generarCalendario();
+                } else {
+                  alert("PIN incorrecto.");
+                }
+              } else {
+                const nombre = prompt("Nombre del chofer:");
+                const empresa = prompt("Empresa:");
+                const pin = prompt("Crea un PIN (4 dígitos):");
+                if (!nombre || !empresa || !pin) return;
+                reservas[fechaStr] = reservas[fechaStr] || {};
+                reservas[fechaStr][horaLabel] = { nombre, empresa, pin };
+                localStorage.setItem("reservasMuelle", JSON.stringify(reservas));
+                generarCalendario();
+              }
+            };
+
+            row.appendChild(celda);
+          }
+          tbody.appendChild(row);
+        }
       }
+
       tabla.appendChild(tbody);
       calendario.appendChild(tabla);
     }
